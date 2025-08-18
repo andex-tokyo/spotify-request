@@ -24,7 +24,7 @@ export default function Home() {
     const data = await response.json()
 
     if (response.ok) {
-      localStorage.setItem('playlistId', data.playlistId)
+      localStorage.setItem('currentPassword', password)
       router.push('/search')
     } else {
       setError(data.error || '合言葉が正しくありません')

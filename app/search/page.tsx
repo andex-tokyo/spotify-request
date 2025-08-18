@@ -26,14 +26,17 @@ export default function SearchPage() {
   const [requestedTracks, setRequestedTracks] = useState<Set<string>>(new Set())
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(-1)
+  const [currentPassword, setCurrentPassword] = useState('')
   const searchInputRef = useRef<HTMLInputElement>(null)
   const suggestionsRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
 
   useEffect(() => {
-    const playlistId = localStorage.getItem('playlistId')
-    if (!playlistId) {
+    const password = localStorage.getItem('currentPassword')
+    if (!password) {
       router.push('/')
+    } else {
+      setCurrentPassword(password)
     }
   }, [router])
 
@@ -157,9 +160,10 @@ export default function SearchPage() {
   }
 
   const handleRequest = async (track: Track) => {
-    const playlistId = localStorage.getItem('playlistId')
-    if (!playlistId) {
-      setMessage('プレイリストIDが見つかりません')
+    const password = localStorage.getItem('currentPassword')
+    if (!password) {
+      setMessage('合言葉が見つかりません。再度ログインしてください。')
+      router.push('/')
       return
     }
 
@@ -175,7 +179,7 @@ export default function SearchPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           trackUri: track.uri,
-          playlistId,
+          password,
           lastRequestTime: lastRequestTimeNum,
         }),
       })
@@ -200,9 +204,14 @@ export default function SearchPage() {
     <div className="min-h-screen bg-gradient-to-br from-purple-600 to-pink-500 p-4">
       <div className="max-w-4xl mx-auto">
         <div className="bg-white rounded-lg shadow-2xl p-6 mb-6">
-          <h1 className="text-3xl font-bold text-center mb-6 text-gray-800">
+          <h1 className="text-3xl font-bold text-center mb-2 text-gray-800">
             曲を検索してリクエスト
           </h1>
+          {currentPassword && (
+            <p className="text-xs text-gray-400 text-center mb-4">
+              合言葉: {currentPassword}
+            </p>
+          )}
           
           <form onSubmit={handleSearch} className="relative">
             <div className="flex gap-2 mb-2">

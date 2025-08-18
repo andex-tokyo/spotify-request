@@ -4,14 +4,30 @@ import { supabase } from '@/lib/supabase'
 
 export async function POST(request: NextRequest) {
   try {
-    const { trackUri, playlistId, lastRequestTime } = await request.json()
+    const { trackUri, password, lastRequestTime } = await request.json()
 
-    if (!trackUri || !playlistId) {
+    if (!trackUri || !password) {
       return NextResponse.json(
-        { error: 'トラックURIとプレイリストIDが必要です' },
+        { error: 'トラックURIと合言葉が必要です' },
         { status: 400 }
       )
     }
+
+    // 合言葉からプレイリストIDを取得
+    const { data: passwordData, error: passwordError } = await supabase
+      .from('passwords')
+      .select('playlist_id')
+      .eq('password', password)
+      .single()
+
+    if (passwordError || !passwordData) {
+      return NextResponse.json(
+        { error: '合言葉が無効です' },
+        { status: 401 }
+      )
+    }
+
+    const playlistId = passwordData.playlist_id
 
     if (lastRequestTime) {
       const timeDiff = Date.now() - lastRequestTime
