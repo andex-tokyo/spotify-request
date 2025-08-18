@@ -10,10 +10,6 @@
 - ⏱️ **レート制限** - 同一端末から5分間の再リクエスト制限
 - 📱 **レスポンシブデザイン** - スマートフォンでも快適に利用可能
 
-## 🚀 デモ
-
-[Live Demo](https://your-app.vercel.app) (デプロイ後にURLを更新してください)
-
 ## 📋 必要な環境
 
 - Node.js 18.0以上
@@ -26,7 +22,7 @@
 ### 1. リポジトリのクローン
 
 ```bash
-git clone https://github.com/yourusername/spotify-request.git
+git clone https://github.com/andex-tokyo/spotify-request.git
 cd spotify-request
 npm install
 ```
@@ -93,7 +89,7 @@ npm run dev
 
 ### Vercelへのデプロイ
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/yourusername/spotify-request)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/andex-tokyo/spotify-request)
 
 1. 上記ボタンをクリック
 2. 環境変数を設定
