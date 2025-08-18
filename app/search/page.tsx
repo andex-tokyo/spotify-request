@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 
@@ -25,6 +25,9 @@ export default function SearchPage() {
   const [message, setMessage] = useState('')
   const [requestedTracks, setRequestedTracks] = useState<Set<string>>(new Set())
   const [showSuggestions, setShowSuggestions] = useState(false)
+  const [selectedIndex, setSelectedIndex] = useState(-1)
+  const searchInputRef = useRef<HTMLInputElement>(null)
+  const suggestionsRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -48,6 +51,23 @@ export default function SearchPage() {
     return () => clearTimeout(timer)
   }, [query])
 
+  // クリック外で閉じる処理
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        searchInputRef.current &&
+        !searchInputRef.current.contains(event.target as Node) &&
+        suggestionsRef.current &&
+        !suggestionsRef.current.contains(event.target as Node)
+      ) {
+        setShowSuggestions(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
   const fetchSuggestions = async (searchQuery: string) => {
     setLoadingSuggestions(true)
     try {
@@ -59,9 +79,10 @@ export default function SearchPage() {
 
       const data = await response.json()
       
-      if (response.ok) {
+      if (response.ok && searchQuery === query) { // 最新のクエリと一致する場合のみ更新
         setSuggestions(data.tracks)
         setShowSuggestions(true)
+        setSelectedIndex(-1)
       }
     } catch (error) {
       // サジェストのエラーは表示しない
@@ -103,6 +124,36 @@ export default function SearchPage() {
     setQuery(`${track.name} - ${track.artists[0].name}`)
     setShowSuggestions(false)
     setTracks([track])
+    searchInputRef.current?.blur() // フォーカスを外す
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showSuggestions || suggestions.length === 0) return
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault()
+        setSelectedIndex(prev => 
+          prev < suggestions.length - 1 ? prev + 1 : prev
+        )
+        break
+      case 'ArrowUp':
+        e.preventDefault()
+        setSelectedIndex(prev => prev > 0 ? prev - 1 : -1)
+        break
+      case 'Enter':
+        e.preventDefault()
+        if (selectedIndex >= 0 && selectedIndex < suggestions.length) {
+          handleSuggestionClick(suggestions[selectedIndex])
+        } else {
+          handleSearch()
+        }
+        break
+      case 'Escape':
+        setShowSuggestions(false)
+        setSelectedIndex(-1)
+        break
+    }
   }
 
   const handleRequest = async (track: Track) => {
@@ -155,18 +206,35 @@ export default function SearchPage() {
           
           <form onSubmit={handleSearch} className="relative">
             <div className="flex gap-2 mb-2">
-              <input
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onFocus={() => query.trim() && setShowSuggestions(true)}
-                placeholder="アーティスト名や曲名を入力..."
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
-              />
+              <div className="flex-1 relative">
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onFocus={() => {
+                    if (query.trim() && suggestions.length > 0) {
+                      setShowSuggestions(true)
+                    }
+                  }}
+                  onKeyDown={handleKeyDown}
+                  placeholder="アーティスト名や曲名を入力..."
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all"
+                  autoComplete="off"
+                />
+                
+                {/* ローディングインジケーター */}
+                {loadingSuggestions && (
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600"></div>
+                  </div>
+                )}
+              </div>
+              
               <button
                 type="submit"
-                disabled={loading}
-                className="px-6 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition duration-200 disabled:opacity-50"
+                disabled={loading || !query.trim()}
+                className="px-6 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 検索
               </button>
@@ -174,18 +242,29 @@ export default function SearchPage() {
 
             {/* サジェストドロップダウン */}
             {showSuggestions && suggestions.length > 0 && (
-              <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-80 overflow-y-auto z-10">
-                {suggestions.map((track) => (
+              <div 
+                ref={suggestionsRef}
+                className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-xl mt-1 max-h-80 overflow-y-auto z-10 animate-fadeIn"
+              >
+                {suggestions.map((track, index) => (
                   <div
                     key={track.id}
-                    onClick={() => handleSuggestionClick(track)}
-                    className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
+                    onMouseDown={(e) => {
+                      e.preventDefault() // フォーカスが外れるのを防ぐ
+                      handleSuggestionClick(track)
+                    }}
+                    onMouseEnter={() => setSelectedIndex(index)}
+                    className={`flex items-center gap-3 p-3 cursor-pointer transition-colors ${
+                      index === selectedIndex 
+                        ? 'bg-purple-50 border-l-4 border-purple-600' 
+                        : 'hover:bg-gray-50 border-l-4 border-transparent'
+                    } ${index !== suggestions.length - 1 ? 'border-b border-gray-100' : ''}`}
                   >
                     {track.album.images[0] && (
                       <img
                         src={track.album.images[0].url}
                         alt={track.album.name}
-                        className="w-12 h-12 rounded object-cover"
+                        className="w-12 h-12 rounded object-cover shadow-sm"
                       />
                     )}
                     <div className="flex-1 min-w-0">
@@ -203,7 +282,7 @@ export default function SearchPage() {
           </form>
 
           {message && (
-            <div className={`p-4 rounded-lg mb-4 mt-4 ${
+            <div className={`p-4 rounded-lg mb-4 mt-4 animate-slideIn ${
               message.includes('追加しました') 
                 ? 'bg-green-50 border border-green-200 text-green-700' 
                 : 'bg-yellow-50 border border-yellow-200 text-yellow-700'
@@ -217,14 +296,14 @@ export default function SearchPage() {
           {tracks.map((track) => (
             <div
               key={track.id}
-              className="bg-white rounded-lg shadow-lg p-4 hover:shadow-xl transition duration-200"
+              className="bg-white rounded-lg shadow-lg p-4 hover:shadow-xl transition-all duration-200 hover:scale-[1.02]"
             >
               <div className="flex gap-4">
                 {track.album.images[0] && (
                   <img
                     src={track.album.images[0].url}
                     alt={track.album.name}
-                    className="w-24 h-24 rounded-lg object-cover"
+                    className="w-24 h-24 rounded-lg object-cover shadow-md"
                   />
                 )}
                 <div className="flex-1">
@@ -236,10 +315,10 @@ export default function SearchPage() {
                   <button
                     onClick={() => handleRequest(track)}
                     disabled={loading || requestedTracks.has(track.id)}
-                    className={`px-4 py-2 rounded-lg font-medium transition duration-200 ${
+                    className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 transform ${
                       requestedTracks.has(track.id)
                         ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        : 'bg-green-500 text-white hover:bg-green-600'
+                        : 'bg-green-500 text-white hover:bg-green-600 hover:scale-105 active:scale-95'
                     }`}
                   >
                     {requestedTracks.has(track.id) ? 'リクエスト済み' : 'リクエスト'}
