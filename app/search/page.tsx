@@ -84,7 +84,10 @@ export default function SearchPage() {
       
       if (response.ok && searchQuery === query) { // 最新のクエリと一致する場合のみ更新
         setSuggestions(data.tracks)
-        setShowSuggestions(true)
+        // フォーカスがある場合のみ表示
+        if (document.activeElement === searchInputRef.current) {
+          setShowSuggestions(true)
+        }
         setSelectedIndex(-1)
       }
     } catch (error) {
@@ -222,9 +225,16 @@ export default function SearchPage() {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   onFocus={() => {
-                    if (query.trim() && suggestions.length > 0) {
+                    // サジェストがあり、まだ表示されていない場合のみ表示
+                    if (query.trim() && suggestions.length > 0 && !showSuggestions) {
                       setShowSuggestions(true)
                     }
+                  }}
+                  onBlur={() => {
+                    // フォーカスが外れた時の処理（mousedownイベントと競合しないようにタイマーを使用）
+                    setTimeout(() => {
+                      setShowSuggestions(false)
+                    }, 200)
                   }}
                   onKeyDown={handleKeyDown}
                   placeholder="アーティスト名や曲名を入力..."
