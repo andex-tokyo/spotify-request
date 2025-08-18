@@ -1,0 +1,31 @@
+{
+  "name": "spotify-request",
+  "version": "1.0.0",
+  "description": "Spotify Request App with password-based playlist selection",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.51.3",
+    "@types/node": "^22.13.3",
+    "@types/react": "^19.0.7",
+    "@types/react-dom": "^19.0.3",
+    "@types/spotify-web-api-node": "^5.0.11",
+    "autoprefixer": "^10.4.20",
+    "axios": "^1.11.0",
+    "express": "^5.1.0",
+    "next": "^15.1.6",
+    "postcss": "^8.5.2",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "spotify-web-api-node": "^5.0.2",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.7.3"
+  }
+}
