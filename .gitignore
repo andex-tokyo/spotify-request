@@ -54,3 +54,6 @@ logs/
 *.log
 pnpm-debug.log*
 lerna-debug.log*
+
+# Serena MCP server
+.serena/
