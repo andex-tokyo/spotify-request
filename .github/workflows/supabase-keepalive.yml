@@ -39,18 +39,6 @@ jobs:
             exit 1
           fi
           
-          # requestsテーブルにもアクセスして確実にアクティビティを記録
-          response2=$(curl -s -o /dev/null -w "%{http_code}" \
-            -H "apikey: $SUPABASE_ANON_KEY" \
-            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
-            "$SUPABASE_URL/rest/v1/requests?select=id&limit=1")
-          
-          if [ "$response2" = "200" ] || [ "$response2" = "206" ]; then
-            echo "✅ Successfully accessed requests table (HTTP $response2)"
-          else
-            echo "⚠️ Could not access requests table (HTTP $response2)"
-          fi
-          
           echo "Keepalive job completed at $(date)"
       
       - name: Create Issue on Failure

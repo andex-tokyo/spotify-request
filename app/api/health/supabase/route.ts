@@ -27,38 +27,22 @@ export async function GET(request: Request) {
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
     
     // 簡単なクエリを実行してデータベースの接続を確認
-    const { data: passwordCheck, error: passwordError } = await supabase
+    const { error: passwordError } = await supabase
       .from('passwords')
       .select('id')
       .limit(1);
 
-    const { data: requestCheck, error: requestError } = await supabase
-      .from('requests')
-      .select('id')
-      .limit(1);
-
     const timestamp = new Date().toISOString();
-    
-    // ヘルスチェックの記録を保存（オプション）
-    await supabase
-      .from('requests')
-      .insert({
-        ip_address: 'health-check',
-        song_name: 'HEALTH_CHECK',
-        artist_name: 'GitHub Actions',
-        requested_at: timestamp
-      });
 
     const status = {
-      healthy: !passwordError && !requestError,
+      healthy: !passwordError,
       timestamp,
       checks: {
         passwords_table: passwordError ? 'failed' : 'ok',
-        requests_table: requestError ? 'failed' : 'ok'
+        database_connection: !passwordError ? 'ok' : 'failed'
       },
       errors: {
-        passwords: passwordError?.message || null,
-        requests: requestError?.message || null
+        passwords: passwordError?.message || null
       }
     };
 
