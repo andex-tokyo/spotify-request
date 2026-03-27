@@ -170,9 +170,6 @@ export default function SearchPage() {
       return
     }
 
-    const lastRequestTime = localStorage.getItem('lastRequestTime')
-    const lastRequestTimeNum = lastRequestTime ? parseInt(lastRequestTime) : 0
-
     setLoading(true)
     setMessage('')
 
@@ -183,16 +180,14 @@ export default function SearchPage() {
         body: JSON.stringify({
           trackUri: track.uri,
           password,
-          lastRequestTime: lastRequestTimeNum,
         }),
       })
 
       const data = await response.json()
-      
+
       if (response.ok) {
         setMessage(`「${track.name}」をプレイリストに追加しました！`)
         setRequestedTracks(prev => new Set(prev).add(track.id))
-        localStorage.setItem('lastRequestTime', data.requestTime.toString())
       } else {
         setMessage(data.error || 'リクエスト中にエラーが発生しました')
       }
