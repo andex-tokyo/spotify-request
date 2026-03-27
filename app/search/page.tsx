@@ -24,6 +24,7 @@ export default function SearchPage() {
   const [loadingSuggestions, setLoadingSuggestions] = useState(false)
   const [message, setMessage] = useState('')
   const [requestedTracks, setRequestedTracks] = useState<Set<string>>(new Set())
+  const [requestingTrackId, setRequestingTrackId] = useState<string | null>(null)
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(-1)
   const [currentPassword, setCurrentPassword] = useState('')
@@ -170,7 +171,7 @@ export default function SearchPage() {
       return
     }
 
-    setLoading(true)
+    setRequestingTrackId(track.id)
     setMessage('')
 
     try {
@@ -186,15 +187,15 @@ export default function SearchPage() {
       const data = await response.json()
 
       if (response.ok) {
-        setMessage(`「${track.name}」をプレイリストに追加しました！`)
         setRequestedTracks(prev => new Set(prev).add(track.id))
+        setMessage(`「${track.name}」をプレイリストに追加しました！`)
       } else {
         setMessage(data.error || 'リクエスト中にエラーが発生しました')
       }
     } catch (error) {
       setMessage('リクエスト中にエラーが発生しました')
     } finally {
-      setLoading(false)
+      setRequestingTrackId(null)
     }
   }
 
@@ -328,14 +329,33 @@ export default function SearchPage() {
                   <p className="text-xs text-gray-500 mb-3">{track.album.name}</p>
                   <button
                     onClick={() => handleRequest(track)}
-                    disabled={loading || requestedTracks.has(track.id)}
-                    className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 transform ${
+                    disabled={requestingTrackId !== null || requestedTracks.has(track.id)}
+                    className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 transform min-w-[120px] ${
                       requestedTracks.has(track.id)
-                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        : 'bg-green-500 text-white hover:bg-green-600 hover:scale-105 active:scale-95'
+                        ? 'bg-green-500 text-white cursor-default'
+                        : requestingTrackId === track.id
+                          ? 'bg-green-400 text-white cursor-wait'
+                          : 'bg-green-500 text-white hover:bg-green-600 hover:scale-105 active:scale-95'
                     }`}
                   >
-                    {requestedTracks.has(track.id) ? 'リクエスト済み' : 'リクエスト'}
+                    {requestingTrackId === track.id ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                        </svg>
+                        追加中...
+                      </span>
+                    ) : requestedTracks.has(track.id) ? (
+                      <span className="flex items-center justify-center gap-1 animate-checkIn">
+                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        リクエスト済み
+                      </span>
+                    ) : (
+                      'リクエスト'
+                    )}
                   </button>
                 </div>
               </div>
