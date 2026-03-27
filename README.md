@@ -15,7 +15,7 @@
 - Node.js 18.0以上
 - npm または yarn
 - Spotify Developer アカウント
-- Supabaseアカウント
+- Neonアカウント（https://neon.tech）
 
 ## 🔧 セットアップ
 
@@ -41,27 +41,32 @@ node scripts/get-refresh-token.js
 # Spotifyでログインして表示されるRefresh Tokenを保存
 ```
 
-### 4. Supabaseの設定
+### 4. Neonデータベースの設定
 
-#### Supabase CLIを使用する場合（推奨）:
-```bash
-# Supabase CLIをインストール
-npm install -g supabase
+1. [Neon](https://neon.tech)でプロジェクトを作成
+2. SQL Editorで以下を実行してテーブルを作成:
 
-# プロジェクトをリンク
-supabase link --project-ref your-project-ref
+```sql
+CREATE TABLE IF NOT EXISTS passwords (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  password VARCHAR(255) UNIQUE NOT NULL,
+  playlist_id VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
+);
 
-# マイグレーションを実行
-supabase db push
+CREATE TABLE IF NOT EXISTS request_history (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  client_ip VARCHAR(255) NOT NULL,
+  track_uri VARCHAR(255) NOT NULL,
+  playlist_id VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
+);
 ```
-
-#### 手動設定の場合:
-1. [Supabase](https://supabase.com)でプロジェクトを作成
-2. SQL Editorで`supabase/migrations`内のファイルを順番に実行
 
 3. 合言葉とプレイリストIDを登録:
 ```sql
-INSERT INTO passwords (password, playlist_id) VALUES 
+INSERT INTO passwords (password, playlist_id) VALUES
 ('さくら', 'YOUR_PLAYLIST_ID_1'),
 ('なつまつり', 'YOUR_PLAYLIST_ID_2');
 ```
@@ -74,8 +79,7 @@ INSERT INTO passwords (password, playlist_id) VALUES
 SPOTIFY_CLIENT_ID=your_spotify_client_id
 SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
 SPOTIFY_REFRESH_TOKEN=your_spotify_refresh_token
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+DATABASE_URL=postgresql://user:password@ep-xxx.neon.tech/neondb?sslmode=require
 ```
 
 ### 6. 開発サーバーの起動
@@ -100,7 +104,7 @@ npm run dev
 - **Frontend**: Next.js 15, React 19, TypeScript
 - **Styling**: Tailwind CSS
 - **Backend**: Next.js API Routes
-- **Database**: Supabase
+- **Database**: Neon (Serverless Postgres)
 - **API**: Spotify Web API
 - **Deployment**: Vercel
 
@@ -114,13 +118,9 @@ spotify-request/
 │   └── page.tsx           # ログインページ
 ├── lib/                   # ユーティリティ
 │   ├── spotify.ts         # Spotify API
-│   └── supabase.ts        # Supabase クライアント
+│   └── db.ts              # Neon DBクライアント
 ├── scripts/               # 開発用スクリプト
 │   └── get-refresh-token.js  # Spotify token取得
-├── supabase/              # データベース設定
-│   ├── migrations/        # DBマイグレーション
-│   ├── config.toml        # Supabase設定
-│   └── seed.sql          # サンプルデータ
 ├── docs/                  # ドキュメント
 │   └── DATABASE.md        # DB設計詳細
 └── public/                # 静的ファイル

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { addTrackToPlaylist } from '@/lib/spotify'
-import { supabase } from '@/lib/supabase'
+import { sql } from '@/lib/db'
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,20 +14,18 @@ export async function POST(request: NextRequest) {
     }
 
     // 合言葉からプレイリストIDを取得
-    const { data: passwordData, error: passwordError } = await supabase
-      .from('passwords')
-      .select('playlist_id')
-      .eq('password', password)
-      .single()
+    const passwordResult = await sql`
+      SELECT playlist_id FROM passwords WHERE password = ${password} LIMIT 1
+    `
 
-    if (passwordError || !passwordData) {
+    if (!passwordResult[0]) {
       return NextResponse.json(
         { error: '合言葉が無効です' },
         { status: 401 }
       )
     }
 
-    const playlistId = passwordData.playlist_id
+    const playlistId = passwordResult[0].playlist_id
 
     if (lastRequestTime) {
       const timeDiff = Date.now() - lastRequestTime
@@ -41,19 +39,14 @@ export async function POST(request: NextRequest) {
 
     await addTrackToPlaylist(playlistId, trackUri)
 
-    const clientIp = request.headers.get('x-forwarded-for') || 
-                     request.headers.get('x-real-ip') || 
+    const clientIp = request.headers.get('x-forwarded-for') ||
+                     request.headers.get('x-real-ip') ||
                      'unknown'
 
-    await supabase
-      .from('request_history')
-      .insert([
-        {
-          client_ip: clientIp,
-          track_uri: trackUri,
-          playlist_id: playlistId,
-        }
-      ])
+    await sql`
+      INSERT INTO request_history (client_ip, track_uri, playlist_id)
+      VALUES (${clientIp}, ${trackUri}, ${playlistId})
+    `
 
     return NextResponse.json({ success: true, requestTime: Date.now() })
   } catch (error) {

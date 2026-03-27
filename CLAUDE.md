@@ -60,9 +60,10 @@
 - Refresh Tokenの取得: `node scripts/get-refresh-token.js`
 - 認証フロー: パスワード認証 → プレイリストID取得 → 曲の追加
 
-### Supabase
+### Neon (Database)
 - データベース: `passwords`テーブル（パスワード→プレイリストID）
-- レート制限: `requests`テーブルで管理
+- リクエスト履歴: `request_history`テーブル
+- クライアント: `@neondatabase/serverless` の `neon` SQLテンプレートタグ
 
 ### 開発環境
 - Node.js 18.0以上
